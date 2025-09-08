@@ -68,6 +68,7 @@ export const readEnv = (): ServerEnvironment => {
 
     // identity
     didPlcUrl: envStr('PDS_DID_PLC_URL'),
+    prismUrl: envStr('PDS_PRISM_URL'),
     didCacheStaleTTL: envInt('PDS_DID_CACHE_STALE_TTL'),
     didCacheMaxTTL: envInt('PDS_DID_CACHE_MAX_TTL'),
     resolverTimeout: envInt('PDS_ID_RESOLVER_TIMEOUT'),
@@ -218,6 +219,7 @@ export type ServerEnvironment = {
 
   // identity
   didPlcUrl?: string
+  prismUrl?: string
   didCacheStaleTTL?: number
   didCacheMaxTTL?: number
   resolverTimeout?: number

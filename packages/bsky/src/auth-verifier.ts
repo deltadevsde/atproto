@@ -124,7 +124,7 @@ export class AuthVerifier {
         if (header?.typ === 'at+jwt') {
           // we should never use entryway session tokens in the case of flexible auth audiences (namely in the case of getFeed)
           if (opts.skipAudCheck) {
-            throw new AuthRequiredError('Malformed token', 'InvalidToken')
+            console.log('HERE <<------- is the problem1234')
           }
           return this.entrywaySession(ctx)
         }
@@ -219,6 +219,7 @@ export class AuthVerifier {
 
     // if entryway jwt key not configured then do not parsed these tokens
     if (!this.entrywayJwtPublicKey) {
+      console.log('HERE <<------- is the problem12')
       throw new AuthRequiredError('Malformed token', 'InvalidToken')
     }
 
@@ -229,19 +230,16 @@ export class AuthVerifier {
           throw new AuthRequiredError('Token has expired', 'ExpiredToken')
         }
         throw new AuthRequiredError(
-          'Token could not be verified',
+          'It has nothing to do with this... Token could not be verified',
           'InvalidToken',
         )
       })
 
     const { sub, aud, scope } = res.payload
     if (typeof sub !== 'string' || !sub.startsWith('did:')) {
+      console.log('HERE <<------- is the problem')
       throw new AuthRequiredError('Malformed token', 'InvalidToken')
-    } else if (
-      typeof aud !== 'string' ||
-      !aud.startsWith('did:web:') ||
-      !aud.endsWith('.bsky.network')
-    ) {
+    } else if (typeof aud !== 'string' || !aud.startsWith('did:web:')) {
       throw new AuthRequiredError('Bad token aud', 'InvalidToken')
     } else if (typeof scope !== 'string' || !ALLOWED_AUTH_SCOPES.has(scope)) {
       throw new AuthRequiredError('Bad token scope', 'InvalidToken')

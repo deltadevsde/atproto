@@ -101,6 +101,7 @@ export const envToCfg = (env: ServerEnvironment): ServerConfig => {
 
   const identityCfg: ServerConfig['identity'] = {
     plcUrl: env.didPlcUrl ?? 'https://plc.directory',
+    prismUrl: env.prismUrl ?? 'http://localhost:76658',
     cacheMaxTTL: env.didCacheMaxTTL ?? DAY,
     cacheStaleTTL: env.didCacheStaleTTL ?? HOUR,
     resolverTimeout: env.resolverTimeout ?? 3 * SECOND,
@@ -412,6 +413,7 @@ export type DiskBlobstoreConfig = {
 
 export type IdentityConfig = {
   plcUrl: string
+  prismUrl: string
   resolverTimeout: number
   cacheStaleTTL: number
   cacheMaxTTL: number

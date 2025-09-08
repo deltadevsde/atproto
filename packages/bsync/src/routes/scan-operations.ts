@@ -53,6 +53,7 @@ export default (ctx: AppContext): Partial<ServiceImpl<typeof Service>> => ({
     const lastOp = ops[ops.length - 1]
 
     return new ScanOperationsResponse({
+      // @ts-ignore
       operations: ops.map((op) => ({
         id: op.id.toString(),
         actorDid: op.actorDid,

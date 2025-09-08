@@ -23,6 +23,7 @@ export default function (server: Server, ctx: AppContext) {
       },
     ],
     handler: async ({ input, req }) => {
+      console.log(ctx, 'context')
       if (ctx.entrywayAgent) {
         return resultPassthru(
           await ctx.entrywayAgent.com.atproto.server.createSession(
@@ -54,6 +55,10 @@ export default function (server: Server, ctx: AppContext) {
       ])
 
       const { status, active } = formatAccountStatus(user)
+
+      console.log(`User ${user.did} logged in successfully.`)
+      console.log(`User ${user.did} handle: ${user.handle}`)
+      console.log(`User ${user.did} signing key: ${appPassword}`)
 
       return {
         encoding: 'application/json',

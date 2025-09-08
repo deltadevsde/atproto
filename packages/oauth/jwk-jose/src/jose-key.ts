@@ -216,6 +216,7 @@ export class JoseKey<J extends Jwk = Jwk> extends Key<J> {
       if (!jwk.alg) jwk.alg = alg
       else if (jwk.alg !== alg) throw new JwkError('Invalid "alg" in JWK')
     }
+    // @ts-ignore
     return this.fromJWK(jwk, kid)
   }
 

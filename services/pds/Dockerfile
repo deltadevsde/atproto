@@ -3,6 +3,7 @@
 FROM node:20.11-alpine3.18 AS build
 
 RUN corepack enable
+RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
 
@@ -44,14 +45,12 @@ COPY ./packages/internal/rollup-plugin-bundle-manifest ./packages/internal/rollu
 COPY ./packages/internal/xrpc-utils ./packages/internal/xrpc-utils
 COPY ./services/pds ./services/pds
 
-# install all deps
-RUN pnpm install --frozen-lockfile > /dev/null
-# build all packages with external node_modules
-RUN pnpm build > /dev/null
+RUN pnpm install --frozen-lockfile
+RUN pnpm -r --filter @atproto/pds... build
 # clean up
 RUN rm -rf node_modules
 # install only prod deps, hoisted to root node_modules dir
-RUN pnpm install --prod --shamefully-hoist --frozen-lockfile --prefer-offline > /dev/null
+RUN pnpm install --prod --shamefully-hoist --frozen-lockfile --prefer-offline
 
 WORKDIR services/pds
 

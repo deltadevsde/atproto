@@ -44,7 +44,7 @@ export const formatSeqSyncEvt = async (
   const evt: SyncEvt = {
     did,
     rev: data.rev,
-    blocks,
+    blocks: blocks as unknown as Uint8Array<ArrayBuffer>,
   }
   return {
     did,

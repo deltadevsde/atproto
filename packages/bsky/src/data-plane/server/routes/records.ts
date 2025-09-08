@@ -58,6 +58,7 @@ export const getRecords =
         : undefined
       const recordBytes = ui8.fromString(json, 'utf8')
       return new Record({
+        // @ts-ignore
         record: recordBytes,
         cid: row?.cid,
         createdAt,

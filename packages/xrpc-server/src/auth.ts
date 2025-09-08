@@ -53,6 +53,7 @@ export const createServiceJwt = async (
 
 export const createServiceAuthHeaders = async (params: ServiceJwtParams) => {
   const jwt = await createServiceJwt(params)
+  console.log(jwt)
   return {
     headers: { authorization: `Bearer ${jwt}` },
   }
@@ -88,7 +89,7 @@ export const verifyJwt = async (
   if (
     // service tokens are not OAuth 2.0 access tokens
     // https://datatracker.ietf.org/doc/html/rfc9068
-    header['typ'] === 'at+jwt' ||
+    // header['typ'] === 'at+jwt' ||
     // "refresh+jwt" is a non-standard type used by the @atproto packages
     header['typ'] === 'refresh+jwt' ||
     // "DPoP" proofs are not meant to be used as service tokens

@@ -1,5 +1,5 @@
-import * as plc from '@did-plc/lib'
 import { isEmailValid } from '@hapi/address'
+import axios from 'axios'
 import { isDisposableEmail } from 'disposable-email-domains-js'
 import { DidDocument, MINUTE, check } from '@atproto/common'
 import { ExportableKeypair, Keypair, Secp256k1Keypair } from '@atproto/crypto'
@@ -11,8 +11,89 @@ import { AppContext } from '../../../../context'
 import { baseNormalizeAndValidate } from '../../../../handle'
 import { Server } from '../../../../lexicon'
 import { InputSchema as CreateAccountInput } from '../../../../lexicon/types/com/atproto/server/createAccount'
+import * as plc from '../../../../prism-plc'
 import { syncEvtDataFromCommit } from '../../../../sequencer'
 import { safeResolveDidDoc } from './util'
+
+interface PrismCreateDIDOperation {
+  did: string
+  verification_methods: Record<string, string>
+  rotation_keys: string[]
+  also_known_as: string[]
+  atproto_pds: string
+}
+
+interface PrismUnsignedTransaction extends Record<string, unknown> {
+  did: string
+  operation: PrismCreateDIDOperation
+  nonce: number
+}
+
+interface PrismTransaction extends PrismUnsignedTransaction {
+  signature: string
+  vk: string
+}
+
+// Function to create and send Prism transaction
+const createAndSendPrismTransaction = async (
+  did: string,
+  handle: string,
+  signingKey: Keypair,
+  rotationKeys: string[],
+  pds: string,
+  rotationKeySigner: Keypair,
+  prismUrl: string,
+): Promise<void> => {
+  console.log('calling createAccount from atproto server')
+  // Create the unsigned transaction
+  const unsignedTransaction: PrismUnsignedTransaction = {
+    did,
+    operation: {
+      did,
+      verification_methods: {
+        atproto: signingKey.did(),
+      },
+      rotation_keys: rotationKeys,
+      also_known_as: [`at://${handle}`],
+      atproto_pds: pds,
+    },
+    nonce: 0,
+  }
+
+  // Sign the transaction using addSignature from @did-plc/lib
+  const signedTransaction = await plc.addSignature(
+    unsignedTransaction,
+    rotationKeySigner,
+  )
+
+  // Create the final transaction structure
+  const transaction: PrismTransaction = {
+    ...unsignedTransaction,
+    signature: signedTransaction.sig,
+    vk: rotationKeySigner.did(),
+  }
+
+  console.log(
+    'Sending transaction to Prism server:',
+    JSON.stringify(transaction, null, 2),
+  )
+  // Send to Prism server
+  try {
+    const response = await axios.post(
+      `http://host.docker.internal:41997/transaction_2`,
+      transaction,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    )
+    console.log('Prism server response:', response.status, response.data)
+  } catch (error) {
+    console.log(error)
+    throw new Error(`Failed to send transaction to Prism server :-( ORBSTACK??`)
+  }
+}
 
 export default function (server: Server, ctx: AppContext) {
   server.com.atproto.server.createAccount({
@@ -47,20 +128,42 @@ export default function (server: Server, ctx: AppContext) {
           actorTxn.repo.createRepo([]),
         )
 
-        // Generate a real did with PLC
+        // Generate a real did with Prism
         if (plcOp) {
           try {
             await ctx.plcClient.sendOperation(did, plcOp)
+            console.log('herer3')
+            // Extract rotation keys matching the ones used in formatDidAndPlcOp
+            const rotationKeys = plcOp.rotationKeys || [
+              ctx.plcRotationKey.did(),
+            ]
+
+            await createAndSendPrismTransaction(
+              did,
+              handle,
+              signingKey,
+              rotationKeys,
+              ctx.cfg.service.publicUrl,
+              ctx.plcRotationKey,
+              ctx.cfg.identity.prismUrl,
+            )
           } catch (err) {
             req.log.error(
               { didKey: ctx.plcRotationKey.did(), handle },
-              'failed to create did:plc',
+              'failed to create did with Prism',
             )
             throw err
           }
         }
 
+        console.log('lets wait for 15 seconds')
+        await new Promise((resolve) => setTimeout(resolve, 15000))
+        console.log('waited 15 seconds')
+        console.log(did)
+
         didDoc = await safeResolveDidDoc(ctx, did, true)
+
+        console.log(didDoc)
 
         creds = await ctx.accountManager.createAccountAndSession({
           did,
@@ -259,7 +362,7 @@ const formatDidAndPlcOp = async (
   did: string
   plcOp: plc.Operation | null
 }> => {
-  // if the user is not bringing a DID, then we format a create op for PLC
+  // if the user is not bringing a DID, then we format a create op for Prism
   const rotationKeys = [ctx.plcRotationKey.did()]
   if (ctx.cfg.identity.recoveryDidKey) {
     rotationKeys.unshift(ctx.cfg.identity.recoveryDidKey)
@@ -267,6 +370,8 @@ const formatDidAndPlcOp = async (
   if (input.recoveryKey) {
     rotationKeys.unshift(input.recoveryKey)
   }
+
+  // Create a DID for Prism (we'll generate one similar to PLC for now)
   const plcCreate = await plc.createOp({
     signingKey: signingKey.did(),
     rotationKeys,
@@ -274,11 +379,14 @@ const formatDidAndPlcOp = async (
     pds: ctx.cfg.service.publicUrl,
     signer: ctx.plcRotationKey,
   })
+
+  // Return the DID but we'll use Prism instead of the plcOp
   return {
     did: plcCreate.did,
-    plcOp: plcCreate.op,
+    plcOp: plcCreate.op, // Keep this for compatibility, but we'll use Prism transaction instead
   }
 }
+
 const validateAtprotoData = (
   data: AtprotoData,
   expected: {

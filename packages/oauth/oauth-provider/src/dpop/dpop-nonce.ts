@@ -42,6 +42,7 @@ export class DpopNonce {
   #next: string
 
   constructor(
+    // @ts-ignore
     secret: DpopSecret = randomBytes(SECRET_BYTE_LENGTH),
     rotationInterval = MAX_ROTATION_INTERVAL,
   ) {

@@ -11,6 +11,7 @@ import {
  */
 const nativeRequestLock: undefined | RuntimeLock = navigator.locks?.request
   ? <T>(name: string, fn: () => T | PromiseLike<T>): Promise<T> =>
+      // @ts-ignore
       navigator.locks.request(name, { mode: 'exclusive' }, async () => fn())
   : undefined
 
@@ -50,6 +51,7 @@ export class BrowserRuntimeImplementation implements RuntimeImplementation {
       case 'sha256':
       case 'sha384':
       case 'sha512': {
+        // @ts-ignore
         const buf = await crypto.subtle.digest(`SHA-${name.slice(3)}`, data)
         return new Uint8Array(buf)
       }

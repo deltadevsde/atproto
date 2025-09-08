@@ -2,6 +2,7 @@ import { PoorlyFormattedDidError, UnsupportedDidMethodError } from '../errors'
 import { DidResolverOpts } from '../types'
 import { BaseResolver } from './base-resolver'
 import { DidPlcResolver } from './plc-resolver'
+import { DidPrismResolver } from './prism-resolver'
 import { DidWebResolver } from './web-resolver'
 
 export class DidResolver extends BaseResolver {
@@ -9,11 +10,16 @@ export class DidResolver extends BaseResolver {
 
   constructor(opts: DidResolverOpts) {
     super(opts.didCache)
-    const { timeout = 3000, plcUrl = 'https://plc.directory' } = opts
+    const {
+      timeout = 3000,
+      plcUrl = 'https://plc.directory',
+      prismUrl = 'http://host.docker.internal:41997',
+    } = opts
     // do not pass cache to sub-methods or we will be double caching
     this.methods = {
       plc: new DidPlcResolver(plcUrl, timeout),
       web: new DidWebResolver(timeout),
+      prism: new DidPrismResolver(prismUrl, timeout),
     }
   }
 

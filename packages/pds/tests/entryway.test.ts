@@ -167,7 +167,7 @@ const createEntryway = async (
   const signingKey = await Secp256k1Keypair.create({ exportable: true })
   const recoveryKey = await Secp256k1Keypair.create({ exportable: true })
   const env: pdsEntryway.ServerEnvironment = {
-    isEntryway: true,
+    isEntryway: false,
     recoveryDidKey: recoveryKey.did(),
     serviceHandleDomains: ['.test'],
     dbPostgresUrl: process.env.DB_POSTGRES_URL,

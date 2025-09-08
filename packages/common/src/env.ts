@@ -7,7 +7,7 @@ export const envInt = (name: string): number | undefined => {
 
 export const envStr = (name: string): string | undefined => {
   const str = process.env[name]
-  if (str === undefined || str.length === 0) return undefined
+  if (!str || str.length === 0) return undefined
   return str
 }
 
@@ -20,6 +20,6 @@ export const envBool = (name: string): boolean | undefined => {
 
 export const envList = (name: string): string[] => {
   const str = process.env[name]
-  if (str === undefined || str.length === 0) return []
+  if (!str || str.length === 0) return []
   return str.split(',')
 }

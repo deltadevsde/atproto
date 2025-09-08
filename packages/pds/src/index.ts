@@ -71,6 +71,8 @@ export class PDS {
   ): Promise<PDS> {
     const ctx = await AppContext.fromConfig(cfg, secrets, overrides)
 
+    console.log("we're about to start 🛫")
+
     const { rateLimits } = ctx.cfg
 
     const server = createServer({
@@ -116,7 +118,7 @@ export class PDS {
               ) {
                 return true
               }
-              if (bypassIps && bypassIps.includes(req.ip)) {
+              if (bypassIps && req.ip && bypassIps.includes(req.ip)) {
                 return true
               }
               return false
@@ -158,7 +160,7 @@ export class PDS {
     app.use(loggerMiddleware)
     app.use(compression())
     app.use(authRoutes.createRouter(ctx)) // Before CORS
-    app.use(cors({ maxAge: DAY / SECOND }))
+    app.use(cors({ maxAge: DAY / SECOND, origin: true, credentials: true }))
     app.use(basicRoutes.createRouter(ctx))
     app.use(wellKnown.createRouter(ctx))
     app.use(server.xrpc.router)

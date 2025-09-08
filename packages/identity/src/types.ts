@@ -18,6 +18,7 @@ export type HandleResolverOpts = {
 export type DidResolverOpts = {
   timeout?: number
   plcUrl?: string
+  prismUrl?: string
   didCache?: DidCache
 }
 

@@ -338,7 +338,7 @@ export class AppContext {
           // entryway), there is no need to use JWTs as access tokens. Instead,
           // the PDS can use tokenId as access tokens. This allows the PDS to
           // always use up-to-date token data from the token store.
-          accessTokenMode: AccessTokenMode.light,
+          accessTokenMode: AccessTokenMode.stateless,
 
           getClientInfo(clientId) {
             return {
@@ -347,6 +347,8 @@ export class AppContext {
           },
         })
       : undefined
+
+    console.log(oauthProvider, 'OAUTH PROVIDER HERE')
 
     const oauthVerifier: OAuthVerifier =
       oauthProvider ?? // OAuthProvider extends OAuthVerifier

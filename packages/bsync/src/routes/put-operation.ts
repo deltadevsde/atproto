@@ -28,6 +28,7 @@ export default (ctx: AppContext): Partial<ServiceImpl<typeof Service>> => ({
         namespace: op.namespace,
         key: op.key,
         method: op.method,
+        // @ts-ignore
         payload: op.payload,
       },
     })
