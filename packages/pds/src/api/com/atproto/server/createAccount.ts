@@ -106,6 +106,8 @@ export default function (server: Server, ctx: AppContext) {
       // @NOTE Until this code and the OAuthStore's `createAccount` are
       // refactored together, any change made here must be reflected over there.
 
+      console.log(ctx.entrywayAgent, 'entrywayAgent in createAccount')
+
       const requester = auth.credentials?.did ?? null
       const {
         did,
@@ -120,6 +122,8 @@ export default function (server: Server, ctx: AppContext) {
         ? await validateInputsForEntrywayPds(ctx, input.body)
         : await validateInputsForLocalPds(ctx, input.body, requester)
 
+      console.log('request in createAccount', requester)
+
       let didDoc: DidDocument | undefined
       let creds: { accessJwt: string; refreshJwt: string }
       await ctx.actorStore.create(did, signingKey)
@@ -131,8 +135,6 @@ export default function (server: Server, ctx: AppContext) {
         // Generate a real did with Prism
         if (plcOp) {
           try {
-            await ctx.plcClient.sendOperation(did, plcOp)
-            console.log('herer3')
             // Extract rotation keys matching the ones used in formatDidAndPlcOp
             const rotationKeys = plcOp.rotationKeys || [
               ctx.plcRotationKey.did(),
@@ -159,11 +161,8 @@ export default function (server: Server, ctx: AppContext) {
         console.log('lets wait for 15 seconds')
         await new Promise((resolve) => setTimeout(resolve, 15000))
         console.log('waited 15 seconds')
-        console.log(did)
 
         didDoc = await safeResolveDidDoc(ctx, did, true)
-
-        console.log(didDoc)
 
         creds = await ctx.accountManager.createAccountAndSession({
           did,
@@ -175,6 +174,8 @@ export default function (server: Server, ctx: AppContext) {
           inviteCode,
           deactivated,
         })
+
+        console.log('creds', creds)
 
         if (!deactivated) {
           await ctx.sequencer.sequenceIdentityEvt(did, handle)

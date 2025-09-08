@@ -124,7 +124,7 @@ export class AuthVerifier {
         if (header?.typ === 'at+jwt') {
           // we should never use entryway session tokens in the case of flexible auth audiences (namely in the case of getFeed)
           if (opts.skipAudCheck) {
-            console.log('HERE <<------- is the problem1234')
+            throw new AuthRequiredError('Malformed token', 'InvalidToken')
           }
           return this.entrywaySession(ctx)
         }
