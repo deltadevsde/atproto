@@ -348,10 +348,6 @@ export class AppContext {
         })
       : undefined
 
-    console.log(oauthProvider?.keyset.privateJwks, 'OAUTH PROVIDER HERE')
-    console.log(oauthProvider?.keyset.publicJwks, 'OAUTH PROVIDER HERE')
-    console.log(oauthProvider?.keyset.toJSON(), 'OAUTH PROVIDER HERE')
-
     const oauthVerifier: OAuthVerifier =
       oauthProvider ?? // OAuthProvider extends OAuthVerifier
       new OAuthVerifier({
@@ -360,10 +356,6 @@ export class AppContext {
         dpopSecret: secrets.dpopSecret,
         redis: redisScratch,
       })
-
-    console.log(oauthVerifier.keyset.privateJwks, 'OAUTH VERIFIER HERE')
-    console.log(oauthVerifier.keyset.publicJwks, 'OAUTH VERIFIER HERE')
-    console.log(oauthVerifier.keyset.toJSON(), 'OAUTH VERIFIER HERE')
 
     const authVerifier = new AuthVerifier(
       accountManager,

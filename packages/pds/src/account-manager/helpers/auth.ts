@@ -51,6 +51,7 @@ export const createAccessToken = (opts: {
       alg: 'HS256', // only symmetric keys supported
     })
     .setAudience(serviceDid)
+    .setIssuer(serviceDid)
     .setSubject(did)
     .setIssuedAt()
     .setExpirationTime(expiresIn)

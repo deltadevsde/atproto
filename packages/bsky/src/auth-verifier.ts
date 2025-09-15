@@ -77,6 +77,7 @@ export type AuthVerifierOpts = {
   modServiceDid: string
   adminPasses: string[]
   entrywayJwtPublicKey?: KeyObject
+  entrywayJwtSecret?: string
 }
 
 export class AuthVerifier {
@@ -85,6 +86,7 @@ export class AuthVerifier {
   public modServiceDid: string
   private adminPasses: Set<string>
   private entrywayJwtPublicKey?: KeyObject
+  private entrywayJwtSecret?: string
 
   constructor(
     public dataplane: DataPlaneClient,
@@ -98,12 +100,15 @@ export class AuthVerifier {
     this.modServiceDid = opts.modServiceDid
     this.adminPasses = new Set(opts.adminPasses)
     this.entrywayJwtPublicKey = opts.entrywayJwtPublicKey
+    this.entrywayJwtSecret = opts.entrywayJwtSecret
   }
 
   // verifiers (arrow fns to preserve scope)
   standardOptionalParameterized =
     (opts: StandardAuthOpts) =>
     async (ctx: ReqCtx): Promise<StandardOutput | NullOutput> => {
+      // irgendwie gibts jetzt ein problem mit decode protected headern. Und irgenwo wird jetzt für pds anfragen und in bsky
+      // die did hinter bearer gesetzt. Das kann nicht stimmen, egal was ist.
       // @TODO remove! basic auth + did supported just for testing.
       if (isBasicToken(ctx.req)) {
         const aud = this.ownDid
@@ -124,7 +129,7 @@ export class AuthVerifier {
         if (header?.typ === 'at+jwt') {
           // we should never use entryway session tokens in the case of flexible auth audiences (namely in the case of getFeed)
           if (opts.skipAudCheck) {
-            throw new AuthRequiredError('Malformed token', 'InvalidToken')
+            throw new AuthRequiredError('Malformed token ids', 'InvalidToken')
           }
           return this.entrywaySession(ctx)
         }
@@ -218,27 +223,43 @@ export class AuthVerifier {
     }
 
     // if entryway jwt key not configured then do not parsed these tokens
-    if (!this.entrywayJwtPublicKey) {
-      console.log('HERE <<------- is the problem12')
-      throw new AuthRequiredError('Malformed token', 'InvalidToken')
+    if (!this.entrywayJwtPublicKey && !this.entrywayJwtSecret) {
+      throw new AuthRequiredError('Malformed token asd', 'InvalidToken')
     }
 
-    const res = await jose
-      .jwtVerify(token, this.entrywayJwtPublicKey)
-      .catch((err) => {
+    let res: jose.JWTVerifyResult
+    if (this.entrywayJwtSecret) {
+      // Use symmetric key (HMAC) verification for development
+      const secret = new TextEncoder().encode(this.entrywayJwtSecret)
+      res = await jose.jwtVerify(token, secret).catch((err) => {
         if (err?.['code'] === 'ERR_JWT_EXPIRED') {
           throw new AuthRequiredError('Token has expired', 'ExpiredToken')
         }
         throw new AuthRequiredError(
-          'It has nothing to do with this... Token could not be verified',
+          'Token could not be verified',
           'InvalidToken',
         )
       })
+    } else if (this.entrywayJwtPublicKey) {
+      // Use asymmetric key (public key) verification for production
+      res = await jose
+        .jwtVerify(token, this.entrywayJwtPublicKey)
+        .catch((err) => {
+          if (err?.['code'] === 'ERR_JWT_EXPIRED') {
+            throw new AuthRequiredError('Token has expired', 'ExpiredToken')
+          }
+          throw new AuthRequiredError(
+            'Token could not be verified',
+            'InvalidToken',
+          )
+        })
+    } else {
+      throw new AuthRequiredError('Malformattteed token', 'InvalidToken')
+    }
 
     const { sub, aud, scope } = res.payload
     if (typeof sub !== 'string' || !sub.startsWith('did:')) {
-      console.log('HERE <<------- is the problem')
-      throw new AuthRequiredError('Malformed token', 'InvalidToken')
+      throw new AuthRequiredError('Malformed token fdasd', 'InvalidToken')
     } else if (typeof aud !== 'string' || !aud.startsWith('did:web:')) {
       throw new AuthRequiredError('Bad token aud', 'InvalidToken')
     } else if (typeof scope !== 'string' || !ALLOWED_AUTH_SCOPES.has(scope)) {
@@ -413,7 +434,8 @@ const isBasicToken = (req: express.Request): boolean => {
 const bearerTokenFromReq = (req: express.Request) => {
   const header = req.headers.authorization || ''
   if (!header.startsWith(BEARER)) return null
-  return header.slice(BEARER.length).trim()
+  const token = header.slice(BEARER.length).trim()
+  return token
 }
 
 export const parseBasicAuth = (

@@ -163,6 +163,7 @@ export class BskyAppView {
       modServiceDid: config.modServiceDid,
       adminPasses: config.adminPasswords,
       entrywayJwtPublicKey,
+      entrywayJwtSecret: config.entrywayJwtSecret,
     })
 
     const featureGates = new FeatureGates({

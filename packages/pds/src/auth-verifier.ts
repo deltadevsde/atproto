@@ -261,7 +261,7 @@ export class AuthVerifier {
           'InvalidToken',
         )
       }
-
+      console.log('is it heeereee?')
       throw new AuthRequiredError(undefined, 'AuthMissing')
     }
   }
@@ -391,7 +391,7 @@ export class AuthVerifier {
 
       const { sub: did } = tokenClaims
       if (typeof did !== 'string' || !did.startsWith('did:')) {
-        throw new InvalidRequestError('Malformed token', 'InvalidToken')
+        throw new InvalidRequestError('Malformed token fasd', 'InvalidToken')
       }
 
       await this.verifyStatus(did, verifyStatusOptions)
@@ -471,6 +471,7 @@ export class AuthVerifier {
   ): Promise<VerifyBearerJwtResult<S>> {
     const token = bearerTokenFromReq(req)
     if (!token) {
+      console.log('IS IT HERE?')
       throw new AuthRequiredError(undefined, 'AuthMissing')
     }
     const { payload, protectedHeader } = await jose
@@ -481,7 +482,6 @@ export class AuthVerifier {
             cause,
           })
         } else {
-          console.log(protectedHeader, 'protectedHeader')
           throw new InvalidRequestError(
             "It's here - Token could not be verified",
             'InvalidToken',
@@ -506,29 +506,23 @@ export class AuthVerifier {
       // catch them. This check here is mainly to protect against the
       // hypothetical case in which a PDS would issue service auth tokens using
       // its private key.
-      console.log('HERE <<------- is the problem13241234')
       throw new InvalidRequestError('Malformed token', 'InvalidToken')
     }
     if (typeof cnf !== 'undefined') {
       // Proof-of-Possession (PoP) tokens are not allowed here
       // https://www.rfc-editor.org/rfc/rfc7800.html
-      console.log('HERE <<------- is the problem23141234')
       throw new InvalidRequestError('Malformed token', 'InvalidToken')
     }
     if (typeof sub !== 'string' || !sub.startsWith('did:')) {
-      console.log('HERE <<------- is the problem12341234')
       throw new InvalidRequestError('Malformed token', 'InvalidToken')
     }
     if (typeof aud !== 'string' || !aud.startsWith('did:')) {
-      console.log('HERE <<------- is the problem123412341234')
       throw new InvalidRequestError('Malformed token', 'InvalidToken')
     }
     if (typeof jti !== 'string' && typeof jti !== 'undefined') {
-      console.log('HERE <<------- is the problem12431234123412341324')
       throw new InvalidRequestError('Malformed token', 'InvalidToken')
     }
     if (!isAuthScope(scope) || !scopes.includes(scope as any)) {
-      console.log('HERE <<------- is the problem1234123412341234123')
       throw new InvalidRequestError('Bad token scope', 'InvalidToken')
     }
 

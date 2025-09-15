@@ -26,6 +26,7 @@ export interface ServerConfigValues {
   serverDid: string
   alternateAudienceDids: string[]
   entrywayJwtPublicKeyHex?: string
+  entrywayJwtSecret?: string
   liveNowConfig?: LiveNowConfig
   // external services
   etcdHosts: string[]
@@ -103,6 +104,7 @@ export class ServerConfig {
     const alternateAudienceDids = envList(process.env.BSKY_ALT_AUDIENCE_DIDS)
     const entrywayJwtPublicKeyHex =
       process.env.BSKY_ENTRYWAY_JWT_PUBLIC_KEY_HEX || undefined
+    const entrywayJwtSecret = process.env.BSKY_ENTRYWAY_JWT_SECRET || undefined
     let liveNowConfig: LiveNowConfig | undefined
     if (process.env.BSKY_LIVE_NOW_CONFIG) {
       try {
@@ -284,6 +286,7 @@ export class ServerConfig {
       serverDid,
       alternateAudienceDids,
       entrywayJwtPublicKeyHex,
+      entrywayJwtSecret,
       liveNowConfig,
       etcdHosts,
       dataplaneUrls,
@@ -372,6 +375,10 @@ export class ServerConfig {
 
   get entrywayJwtPublicKeyHex() {
     return this.cfg.entrywayJwtPublicKeyHex
+  }
+
+  get entrywayJwtSecret() {
+    return this.cfg.entrywayJwtSecret
   }
 
   get liveNowConfig() {

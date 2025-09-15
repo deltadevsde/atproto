@@ -15,49 +15,29 @@ import * as plc from '../../../../prism-plc'
 import { syncEvtDataFromCommit } from '../../../../sequencer'
 import { safeResolveDidDoc } from './util'
 
-interface PrismCreateDIDOperation {
-  did: string
-  verification_methods: Record<string, string>
-  rotation_keys: string[]
-  also_known_as: string[]
-  atproto_pds: string
-}
-
 interface PrismUnsignedTransaction extends Record<string, unknown> {
   did: string
-  operation: PrismCreateDIDOperation
+  operation: plc.Operation
   nonce: number
+  vk: string
 }
 
 interface PrismTransaction extends PrismUnsignedTransaction {
   signature: string
-  vk: string
 }
 
 // Function to create and send Prism transaction
 const createAndSendPrismTransaction = async (
   did: string,
-  handle: string,
-  signingKey: Keypair,
-  rotationKeys: string[],
-  pds: string,
+  plcOp: plc.Operation,
   rotationKeySigner: Keypair,
-  prismUrl: string,
 ): Promise<void> => {
-  console.log('calling createAccount from atproto server')
   // Create the unsigned transaction
   const unsignedTransaction: PrismUnsignedTransaction = {
     did,
-    operation: {
-      did,
-      verification_methods: {
-        atproto: signingKey.did(),
-      },
-      rotation_keys: rotationKeys,
-      also_known_as: [`at://${handle}`],
-      atproto_pds: pds,
-    },
+    operation: plcOp,
     nonce: 0,
+    vk: rotationKeySigner.did(),
   }
 
   // Sign the transaction using addSignature from @did-plc/lib
@@ -70,7 +50,6 @@ const createAndSendPrismTransaction = async (
   const transaction: PrismTransaction = {
     ...unsignedTransaction,
     signature: signedTransaction.sig,
-    vk: rotationKeySigner.did(),
   }
 
   console.log(
@@ -79,7 +58,7 @@ const createAndSendPrismTransaction = async (
   )
   // Send to Prism server
   try {
-    const response = await axios.post(
+    await axios.post(
       `http://host.docker.internal:41997/transaction_2`,
       transaction,
       {
@@ -88,7 +67,8 @@ const createAndSendPrismTransaction = async (
         },
       },
     )
-    console.log('Prism server response:', response.status, response.data)
+    console.log('lets wait for 15 seconds')
+    await new Promise((resolve) => setTimeout(resolve, 15000))
   } catch (error) {
     console.log(error)
     throw new Error(`Failed to send transaction to Prism server :-( ORBSTACK??`)
@@ -106,8 +86,6 @@ export default function (server: Server, ctx: AppContext) {
       // @NOTE Until this code and the OAuthStore's `createAccount` are
       // refactored together, any change made here must be reflected over there.
 
-      console.log(ctx.entrywayAgent, 'entrywayAgent in createAccount')
-
       const requester = auth.credentials?.did ?? null
       const {
         did,
@@ -122,8 +100,6 @@ export default function (server: Server, ctx: AppContext) {
         ? await validateInputsForEntrywayPds(ctx, input.body)
         : await validateInputsForLocalPds(ctx, input.body, requester)
 
-      console.log('request in createAccount', requester)
-
       let didDoc: DidDocument | undefined
       let creds: { accessJwt: string; refreshJwt: string }
       await ctx.actorStore.create(did, signingKey)
@@ -135,20 +111,7 @@ export default function (server: Server, ctx: AppContext) {
         // Generate a real did with Prism
         if (plcOp) {
           try {
-            // Extract rotation keys matching the ones used in formatDidAndPlcOp
-            const rotationKeys = plcOp.rotationKeys || [
-              ctx.plcRotationKey.did(),
-            ]
-
-            await createAndSendPrismTransaction(
-              did,
-              handle,
-              signingKey,
-              rotationKeys,
-              ctx.cfg.service.publicUrl,
-              ctx.plcRotationKey,
-              ctx.cfg.identity.prismUrl,
-            )
+            await createAndSendPrismTransaction(did, plcOp, ctx.plcRotationKey)
           } catch (err) {
             req.log.error(
               { didKey: ctx.plcRotationKey.did(), handle },
@@ -158,11 +121,9 @@ export default function (server: Server, ctx: AppContext) {
           }
         }
 
-        console.log('lets wait for 15 seconds')
-        await new Promise((resolve) => setTimeout(resolve, 15000))
-        console.log('waited 15 seconds')
-
         didDoc = await safeResolveDidDoc(ctx, did, true)
+
+        console.log(didDoc, 'DID DOC HERE')
 
         creds = await ctx.accountManager.createAccountAndSession({
           did,
@@ -175,9 +136,8 @@ export default function (server: Server, ctx: AppContext) {
           deactivated,
         })
 
-        console.log('creds', creds)
-
         if (!deactivated) {
+          console.log('happens now...')
           await ctx.sequencer.sequenceIdentityEvt(did, handle)
           await ctx.sequencer.sequenceAccountEvt(did, AccountStatus.Active)
           await ctx.sequencer.sequenceCommit(did, commit)
@@ -189,6 +149,7 @@ export default function (server: Server, ctx: AppContext) {
         await ctx.accountManager.updateRepoRoot(did, commit.cid, commit.rev)
         await ctx.actorStore.clearReservedKeypair(signingKey.did(), did)
       } catch (err) {
+        console.log('destroying actor because of error', err)
         // this will only be reached if the actor store _did not_ exist before
         await ctx.actorStore.destroy(did)
         throw err

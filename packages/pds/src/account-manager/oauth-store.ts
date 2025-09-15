@@ -119,7 +119,6 @@ export class OAuthStore
     email,
     password,
   }: SignUpData): Promise<Account> {
-    console.log('createAccount called from OAuthStore')
     // @TODO Send an account creation confirmation email (+verification link) to the user (in their locale)
     // @NOTE Password strength & length already enforced by the OAuthProvider
 
@@ -146,8 +145,6 @@ export class OAuthStore
     })
 
     const { did, op } = plcCreate
-
-    console.log('DID:', did)
 
     try {
       await this.actorStore.create(did, signingKey)

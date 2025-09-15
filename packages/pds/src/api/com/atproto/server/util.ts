@@ -35,7 +35,6 @@ export const safeResolveDidDoc = async (
 ): Promise<DidDocument | undefined> => {
   try {
     const didDoc = await ctx.idResolver.did.resolve(did, forceRefresh)
-    console.log('resolved did doc for', did, didDoc)
     return didDoc ?? undefined
   } catch (err) {
     httpLogger.warn({ err, did }, 'failed to resolve did doc')

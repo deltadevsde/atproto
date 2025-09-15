@@ -216,8 +216,6 @@ export class AccountManager {
     inviteCode?: string
     deactivated?: boolean
   }) {
-    console.log('DID:', opts.did)
-    console.log('service DID:', this.serviceDid)
     const { accessJwt, refreshJwt } = await auth.createTokens({
       did: opts.did,
       jwtKey: this.jwtKey,
