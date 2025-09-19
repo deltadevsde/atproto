@@ -67,8 +67,8 @@ const createAndSendPrismTransaction = async (
         },
       },
     )
-    console.log('lets wait for 15 seconds')
-    await new Promise((resolve) => setTimeout(resolve, 15000))
+    console.log('lets wait for 10 seconds')
+    await new Promise((resolve) => setTimeout(resolve, 10000))
   } catch (error) {
     console.log(error)
     throw new Error(`Failed to send transaction to Prism server :-( ORBSTACK??`)
